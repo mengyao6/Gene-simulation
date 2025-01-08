@@ -1,0 +1,8 @@
+# 忽略debug文件夹下all files
+.vscode/*
+
+# 忽略所有exe文件
+*.exe
+
+# 忽略所有扩展名为.pyc的文件
+*.pyc
