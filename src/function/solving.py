@@ -79,7 +79,7 @@ def model_sol2(z, Ions, Concentration, Sum, N, dz):
     return C_model
 
 #求解基因方程组========================[copies/L]
-def model_sol3(Rct, gene, geneR, z, N):
+def model_sol3(Rct, gene, geneR, z, N, Gene_present_in = "water", Discretization_methods = 2):
     lamda = 0.001/86400     #s-1 
     Ions = 7
     dh = 0.01
@@ -109,41 +109,51 @@ def model_sol3(Rct, gene, geneR, z, N):
         
         
     for i in range(1, N): 
-#         A[i, i] = -lamda * por(z[i])
-#         A[i, i + 1] = - Solid_rate(z[i+1])*por(z[i+1])/ (2*dz) 
-#         A[i, i - 1] = Solid_rate(z[i-1])*por(z[i-1]) / (2*dz) 
-#         rhs[i]  = geneR[i]*por(z[i])
-#         R_model[i] = (A[i, i - 1]*gene[i-1] + A[i, i]*gene[i] + A[i, i+1]*gene[i+1] + rhs[i]) / por(z[i])
-        
 
-        #假设所有基因分布于孔隙水中
-#         A[i, i] =  -(De(z[i-1], Ions)*De(z[i], Ions))**0.5 * (por(z[i-1])*por(z[i]))**0.5 /dh**2 -(De(z[i+1], Ions)*De(z[i], Ions))**0.5 * (por(z[i+1])*por(z[i]))**0.5/dh**2 
-#         A[i, i - 1] = (De(z[i-1], Ions)*De(z[i], Ions))**0.5 * (por(z[i-1])*por(z[i]))**0.5 /dh**2  + Water_rate(z[i-1])*por(z[i-1]) /(2*dh)
-#         A[i, i + 1] =(De(z[i+1], Ions)*De(z[i], Ions))**0.5 * (por(z[i+1])*por(z[i]))**0.5/dh**2 - Water_rate(z[i+1])*por(z[i+1]) /(2*dh)
-#         rhs[i] = (geneR[i]-lamda * gene[i])*por(z[i])
-#         R_model[i] = (A[i, i - 1]*gene[i-1] + A[i, i]*gene[i] + A[i, i+1]*gene[i+1] + rhs[i]) / por(z[i])
-        
-        # 参考 毛荣 在控制点上离散，同时界面通量参考Li，保证连续并修改为调和平均值，
+        # 1. 假设所有基因分布于沉积物中，
+        if Gene_present_in == "sedimentary":
+            A[i, i] = -lamda * por(z[i])
+            A[i, i + 1] = - Solid_rate(z[i+1])*por(z[i+1])/ (2*dz) 
+            A[i, i - 1] = Solid_rate(z[i-1])*por(z[i-1]) / (2*dz) 
+            rhs[i]  = geneR[i]*por(z[i])
+            R_model[i] = (A[i, i - 1]*gene[i-1] + A[i, i]*gene[i] + A[i, i+1]*gene[i+1] + rhs[i]) / por(z[i])
+
+
+        # 2. 假设所有基因分布于孔隙水中，
         # ??? 基因的水动力弥散系数
-        phiD_i     = por(z[i])* De(z[i], Ions)
-        phiv_i     = por(z[i])* Water_rate(z[i])
-        phiv_i_next  = por(z[i+1])* Water_rate(z[i+1])
-        phiv_i_last  = por(z[i-1])* Water_rate(z[i-1])
-        phiD_i_low =  (dz+dz) / (dz/(De(z[i], Ions)* por(z[i])) + dz/(De(z[i-1], Ions)* por(z[i-1])))  
-        phiD_i_up =   (dz+dz) / (dz/(De(z[i], Ions)* por(z[i])) + dz/(De(z[i+1], Ions)* por(z[i+1]))) 
-        phiv_i_low = (dz+dz) / (dz/(Water_rate(z[i])* por(z[i])) + dz/(Water_rate(z[i-1])* por(z[i-1])))  
-        phiv_i_up =  (dz+dz) / (dz/(Water_rate(z[i])* por(z[i])) + dz/(Water_rate(z[i+1])* por(z[i+1])))       
-#         D_i_up = phiD_i_up*(gene[i+1]-gene[i])/(dz+dz)
-#         D_i_low = phiD_i_low*(gene[i]-gene[i-1])/(dz+dz)
-#         gene_i_up = gene[i] + phiv_i_up*(gene[i+1]-gene[i])/(dz+dz)*dz/(por(z[i])*Water_rate(z[i]))
-#         gene_i_low = gene[i-1] + phiv_i_low*(gene[i]-gene[i-1])/(dz+dz)*dz/(por(z[i-1])*Water_rate(z[i-1]))
-#         R_model[i] = 2/(por(z[i])*dz)*(D_i_up-D_i_low)-(phiv_i_up*gene_i_up-phiv_i_low*gene_i_low)/(dz*por(z[i])) + geneR[i]-lamda * gene[i]
-        A[i, i] =  2/(dz*por(z[i]))*(-phiD_i_up/(dz+dz)-phiD_i_low/(dz+dz)) - 1/(dz*por(z[i]))*(phiv_i_up-phiv_i_up**2/phiv_i*dz/(dz+dz)) + 1/(dz*por(z[i]))*(phiv_i_low**2/phiv_i_last*dz/(dz+dz)) - 1/dt
-        A[i, i - 1] = 2/(dz*por(z[i]))*phiD_i_low/(dz+dz) + 1/(dz*por(z[i]))*(phiv_i_low-phiv_i_low**2/phiv_i_last*dz/(dz+dz))
-        A[i, i + 1] = 2/(dz*por(z[i]))*phiD_i_up/(dz+dz) - 1/(dz*por(z[i]))*(phiv_i_up**2/phiv_i*dz/(dz+dz))
-        rhs[i] = -(geneR[i]-lamda*gene[i]) -gene[i]/dt        
+        # 离散方式2： 参考 毛荣 在控制点上离散，同时界面通量参考Li，保证连续并修改为调和平均值，
+        if Gene_present_in == "water":
+            if Discretization_methods == 1:
+                A[i, i] =  -(De(z[i-1], Ions)*De(z[i], Ions))**0.5 * (por(z[i-1])*por(z[i]))**0.5 /dh**2 -(De(z[i+1], Ions)*De(z[i], Ions))**0.5 * (por(z[i+1])*por(z[i]))**0.5/dh**2 
+                A[i, i - 1] = (De(z[i-1], Ions)*De(z[i], Ions))**0.5 * (por(z[i-1])*por(z[i]))**0.5 /dh**2  + Water_rate(z[i-1])*por(z[i-1]) /(2*dh)
+                A[i, i + 1] =(De(z[i+1], Ions)*De(z[i], Ions))**0.5 * (por(z[i+1])*por(z[i]))**0.5/dh**2 - Water_rate(z[i+1])*por(z[i+1]) /(2*dh)
+                rhs[i] = (geneR[i]-lamda * gene[i])*por(z[i])
+                R_model[i] = (A[i, i - 1]*gene[i-1] + A[i, i]*gene[i] + A[i, i+1]*gene[i+1] + rhs[i]) / por(z[i])
+                
+                D_i_up = phiD_i_up*(gene[i+1]-gene[i])/(dz+dz)
+                D_i_low = phiD_i_low*(gene[i]-gene[i-1])/(dz+dz)
+                gene_i_up = gene[i] + phiv_i_up*(gene[i+1]-gene[i])/(dz+dz)*dz/(por(z[i])*Water_rate(z[i]))
+                gene_i_low = gene[i-1] + phiv_i_low*(gene[i]-gene[i-1])/(dz+dz)*dz/(por(z[i-1])*Water_rate(z[i-1]))
+                R_model[i] = 2/(por(z[i])*dz)*(D_i_up-D_i_low)-(phiv_i_up*gene_i_up-phiv_i_low*gene_i_low)/(dz*por(z[i])) + geneR[i]-lamda * gene[i]
+      
         
-        
+            # 离散方式2： 参考 毛荣 在控制点上离散，同时界面通量参考Li，保证连续并修改为调和平均值，
+            if Discretization_methods == 2:
+                phiD_i     = por(z[i])* De(z[i], Ions)
+                phiv_i     = por(z[i])* Water_rate(z[i])
+                phiv_i_next  = por(z[i+1])* Water_rate(z[i+1])
+                phiv_i_last  = por(z[i-1])* Water_rate(z[i-1])
+                phiD_i_low =  (dz+dz) / (dz/(De(z[i], Ions)* por(z[i])) + dz/(De(z[i-1], Ions)* por(z[i-1])))  
+                phiD_i_up =   (dz+dz) / (dz/(De(z[i], Ions)* por(z[i])) + dz/(De(z[i+1], Ions)* por(z[i+1]))) 
+                phiv_i_low = (dz+dz) / (dz/(Water_rate(z[i])* por(z[i])) + dz/(Water_rate(z[i-1])* por(z[i-1])))  
+                phiv_i_up =  (dz+dz) / (dz/(Water_rate(z[i])* por(z[i])) + dz/(Water_rate(z[i+1])* por(z[i+1])))       
+
+                A[i, i] =  2/(dz*por(z[i]))*(-phiD_i_up/(dz+dz)-phiD_i_low/(dz+dz)) - 1/(dz*por(z[i]))*(phiv_i_up-phiv_i_up**2/phiv_i*dz/(dz+dz)) + 1/(dz*por(z[i]))*(phiv_i_low**2/phiv_i_last*dz/(dz+dz)) - 1/dt
+                A[i, i - 1] = 2/(dz*por(z[i]))*phiD_i_low/(dz+dz) + 1/(dz*por(z[i]))*(phiv_i_low-phiv_i_low**2/phiv_i_last*dz/(dz+dz))
+                A[i, i + 1] = 2/(dz*por(z[i]))*phiD_i_up/(dz+dz) - 1/(dz*por(z[i]))*(phiv_i_up**2/phiv_i*dz/(dz+dz))
+                rhs[i] = -(geneR[i]-lamda*gene[i]) -gene[i]/dt 
+
+
     # y=solve(A,b)===============
     R_model = np.dot(np.linalg.inv(A), rhs)    
     return R_model
