@@ -15,10 +15,10 @@ T = 298.15    # [-] the thermodynamic temperature
 def por(depth):                   #BJ
     beta = 0.008  # cm-1
     por_sta = 0.55     #porosity at start
-    por_inf = 0.3    #porosity at infinity
+    por_end = 0.3    #porosity at infinity
     # porosity= 0.30 + 0.25 * 2.71828**(-depth/100)
     # porosity= 0.29 + 0.36 * 2.71828**(-depth/7)
-    porosity = por_sta + (por_inf - por_sta) * np.exp((-depth * beta))
+    porosity = por_sta + (por_end - por_sta) * np.exp((-depth * beta))
     return porosity
 
 
@@ -60,20 +60,20 @@ def De(depth, Ions):
 
 # define 沉积物埋藏速率==========[m/s]
 def Solid_rate(depth):                   #BJ 
-    Vs_0 = 1.96 * 10**(-3)   
-    Vs_00 = 1.96 * 10**(-3)   
-    Vs = Vs_00 * (1-por(1e100)) / (1-por(depth))  # Chuang P C et al.(2019); Rui Zhao et al. (2016)
+    Vs_start = 1.96 * 10**(-3)   
+    Vs_end = 1.96 * 10**(-3)   
+    Vs = Vs_end * (1-por(1e100)) / (1-por(depth))  # Chuang P C et al.(2019); Rui Zhao et al. (2016)
     return Vs * 1e-2/86400/365
 
 
 # define 孔隙水垂向流速==========[m/s]
 def Water_rate(depth):                   #BJ
-    Vp_0 = 1.72   
-    Vp_00 = 1.72
-    Vs_0 = 1.96 * 10**(-3)   
-    Vs_00 = 1.96 * 10**(-3)    
+    Vp_start = 1.72   
+    Vp_end = 1.72
+    Vs_start = 1.96 * 10**(-3)   
+    Vs_end = 1.96 * 10**(-3)    
     
-    Vp = Vp_00 * por(1e100) / por(depth)                # Rui Zhao et al. (2016)
+    Vp = Vp_end * por(1e100) / por(depth)                # Rui Zhao et al. (2016)
 
     # Vp = (por(1e10)*Vs_00 - por(0)*Vp_0) /por(depth)  # Chuang P C et al.2019
     return Vp * 1e-2/86400/365

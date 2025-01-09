@@ -89,11 +89,28 @@ while 1:
         for i in range(0, N+1):
             Sum8 = Rate_R2(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])                    #计算不同层位的Ri，基因生长速率；[Coies/L/s]
             for j in range(0, 10):
-                GeneR[j][i] = Sum8[j]
+                GeneR[j][i] = Sum8[j][0]
         #print(GeneR[9,:])
         Tao = np.zeros((N+1, 10), dtype=np.float64)
         Sum9=0
         for i in range(0, 10):
             Sum9 = model_sol3(i,  Gene[:,i],  GeneR[i,:], z,  N)
             for j in range(0, N+1):
-                Tao[j][i] = Sum9[j]                        
+                Tao[j][i] = Sum9[j][0]                        
+
+    ######################3.3 浓度求解##########################            
+        SumR = np.zeros((7, N+1), dtype=np.float64)
+        Sum0=0
+        for i in range(0, N+1):
+            Sum0 = Sum_R(Concentration[i,:], Gene[i,:], z[i])                           #计算细菌代谢产生的不同化学物质 Ri
+            for j in range(0,7):
+                SumR[j][i] = Sum0[j][0]                                                 #[mol/L/s]
+        Cc = np.zeros((7, N+1), dtype=np.float64)                                    #计算iter次化学物质浓度，并更新
+        Sum1=0;  Sum2=0;  Sum3=0;  Sum4=0;  Sum5=0;  Sum6=0;  Sum7=0
+        Sum1= model_sol2(z, 0, Concentration[:,2],   SumR[0,:], N, dz)                           #C6
+        Sum2= model_sol2(z, 1, Concentration[:,11],  SumR[1,:], N, dz)                           #O2
+        Sum3= model_sol2(z, 2, Concentration[:,7],   SumR[2,:], N, dz)                           #NH4
+        Sum4= model_sol2(z, 3, Concentration[:,4],   SumR[3,:], N, dz)                           #NO2
+        Sum5= model_sol2(z, 4, Concentration[:,5],   SumR[4,:], N, dz)                           #NO3
+        Sum6= model_sol2(z, 5, Concentration[:,9],   SumR[5,:], N, dz)                           #SO4
+        Sum7= model_sol2(z, 6, Concentration[:,8],   SumR[6,:], N, dz)                          #H2S      
