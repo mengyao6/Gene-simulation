@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pdb
 
 
-from src.function.public import Rate_R2
+from src.function.public import Rate_R2, Sum_R
 from src.function.solving import model_sol2, model_sol3
 
 from src.model.chemicals import Chemicals
@@ -102,7 +102,7 @@ while 1:
         SumR = np.zeros((7, N+1), dtype=np.float64)
         Sum0=0
         for i in range(0, N+1):
-            Sum0 = Sum_R(Concentration[i,:], Gene[i,:], z[i])                           #计算细菌代谢产生的不同化学物质 Ri
+            Sum0 = Sum_R(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])                           #计算细菌代谢产生的不同化学物质 Ri
             for j in range(0,7):
                 SumR[j][i] = Sum0[j][0]                                                 #[mol/L/s]
         Cc = np.zeros((7, N+1), dtype=np.float64)                                    #计算iter次化学物质浓度，并更新
@@ -113,4 +113,4 @@ while 1:
         Sum4= model_sol2(z, 3, Concentration[:,4],   SumR[3,:], N, dz)                           #NO2
         Sum5= model_sol2(z, 4, Concentration[:,5],   SumR[4,:], N, dz)                           #NO3
         Sum6= model_sol2(z, 5, Concentration[:,9],   SumR[5,:], N, dz)                           #SO4
-        Sum7= model_sol2(z, 6, Concentration[:,8],   SumR[6,:], N, dz)                          #H2S      
+        Sum7= model_sol2(z, 6, Concentration[:,8],   SumR[6,:], N, dz)                          #H2S        

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-from src.function.public import por, De, Solid_rate
+from src.function.public import por, De, Solid_rate, Water_rate
 
 # 求解浓度方程组========================[mol/L]
 def model_sol2(z, Ions, Concentration, Sum, N, dh, Chemicals_present_in = "water", Discretization_methods = 1):   

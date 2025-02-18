@@ -10,6 +10,12 @@ dPsi = 0.12   # [V] electric potential
 R = 8.31 * 1e-3      # [KJ/k/mole] the gas constant
 T = 298.15    # [-] the thermodynamic temperature
 
+#Gene 0：cox,      1：narG,   2：nirk,   3：nrf,    4：dsr,     5：amoA,     6：hzo,    7：nap        8：nor      9：sox    
+gene_names = ['cox', 'narG', 'nirk', 'nrf', 'dsr', 'amoA', 'hzo', 'nap', 'nor', 'sox']
+# 0: C_co2, 1: C_hco3, 2: C_c6, 3: C_H, 4: C_no2, 5: C_no3, 6: C_n2, 7: C_nh4, 8: C_h2s, 9: C_so4, 10:C_DIC,  11:C_o2 ,    12:C_POC
+Chemical_names = ['C_co2', 'C_hco3', 'C_c6', 'C_H', 'C_no2', 'C_no3', 'C_n2', 'C_nh4', 'C_h2s', 'C_so4', 'C_DIC', 'C_o2', 'C_POC']
+
+simualtion = ['C_c6', 'C_o2', 'C_nh4', 'C_no2', 'C_no3', 'C_so4', 'C_h2s']
 
 # define porosity dist.==========
 def por(depth):                   #BJ
@@ -25,17 +31,27 @@ def por(depth):                   #BJ
 # Dsw f(Temp, Sality, Presure) 
 def diff(Temp = 25, Sality = 35, Presure = 1.013253):
     sinyr = 60*60*24*365 # number of seconds in one year
-    Dmol_CO2 = 292.2801   # [m2/s]
-    Dmol_HCO3 = 152.2161
-    Dmol_O2 = 371.2064
-    Dmol_Mn = 95.66153
-    Dmol_NO2 = 309.8471
-    Dmol_NH4 = 285.7813
-    Dmol_SO4 = 146.8013
-    Dmol_H2S = 255.6641
-    Dmol_PO4 = 78.81548
-    Dsw=np.array([Dmol_c6, Dmol_o2, Dmol_nh4, Dmol_no2, Dmol_no3, Dmol_so4, Dmol_h2s]) 
-    return Dsw * sinyr * 10**4  #Ref the R script from Zhaorui
+    Dmol = Chemicals()
+    Dsw = Chemicals()
+
+    Dmol.C_co2 = 292.2801   # [m2/s]
+    Dmol.C_hco3 = 152.2161
+    Dmol.C_o2 = 371.2064
+    Dmol.C_Mn = 95.66153
+    Dmol.C_no2 = 309.8471
+    Dmol.C_nh4 = 285.7813
+    Dmol.C_so4 = 146.8013
+    Dmol.C_h2s = 255.6641
+    Dmol.C_po4 = 78.81548
+    Dmol.C_c6 = 0.00  # TODO
+    Dmol.C_no3 = 0.00  # TODO
+
+    for matter in Chemical_names:
+        matter_value = getattr(Dmol, matter)
+        # Apply the transformation and store it in F_ts
+        setattr(Dsw, matter, matter_value*sinyr*10**4)
+
+    return Dsw
 
 
 # define diffusion coefficient==============[m2/yr]
@@ -53,7 +69,7 @@ def De(depth, Ions):
    
     # #Ref the R script from Zhaorui 
     Dsw = diff()
-    eff_D= Dsw[Ions] / ( 1- 2 * np.log(por(depth)))
+    eff_D=  getattr(Dsw, simualtion[Ions]) / ( 1- 2 * np.log(por(depth)))
     
     return eff_D
 
@@ -119,9 +135,6 @@ def Biomass_Y(D_G: Genes):
 # define thermodynamic potential factor F_T==========
 def Thermo_T(D_G: Genes):
     F_ts = DeltaGs()
-    # List of gene names for easy access
-    gene_names = ['cox', 'narG', 'nirk', 'nrf', 'dsr', 'amoA', 'hzo', 'nap', 'nor', 'sox']
-
     # Loop through each gene and compute its transformed value
     for gene in gene_names:
         # Use getattr to access the gene value dynamically
@@ -138,8 +151,8 @@ def Rate_R(taf: Genes, F_t: Genes, Concentration: Chemicals):
     G_R = np.zeros((10, 1), dtype=np.float64)
     # Concentration 1：C_co2, 2：C_hco3, 3：C_c6, 4：C_H, 5：C_no2, 6：C_no3, 7：C_n2, 8：C_nh4, 9：C_h2s, 10：C_so4, 11:C_DIC,  12:C_o2
     C_co2 = Concentration.C_co2; C_hco3 = Concentration.C_hco3; C_c6 = Concentration.C_c6; C_H  = Concentration.C_H; C_no2 = Concentration.C_no2
-    C_no3 = Concentration.C_no3;  C_n2  = Concentration.C_n2; C_nh4= Concentration.C_nh4; C_h2s= Concentration.C_h2s; C_so4 = Concentration.C_so4
-    C_DIC = Concentration.C_DIC; C_o2  = Concentration.C_o2
+    C_no3 = Concentration.C_no3;  C_n2  = Concentration.C_n2; C_nh4 = Concentration.C_nh4; C_h2s= Concentration.C_h2s; C_so4 = Concentration.C_so4
+    C_DIC = Concentration.C_DIC; C_o2  = Concentration.C_o2; C_POC= Concentration.C_POC
 
     # 1：cox,      2：narG,   3：nirk,   4：nrf,    5：dsr,     6：amoA,     7：hzo,    8：nap        9：nor      10：sox
     # mu=np.array([0.28, 0.151, 0.247, 0.162, 0.0636, 0.432, 0.864, 0.864, 0.432, 0.864])/86400         #s-1
@@ -176,61 +189,62 @@ def age(depth):
     return ag*1e3
 
 # define the rate of DOC production by microbial mortality ==========[mol/g/s   &&  gene/g/s]
-def DOC_Rm(taf):
+def DOC_Rm(taf: Genes):
     lamda = 0.001 /86400           #s-1
     Ni  = 3.75 * 1e13    #[genes/g]
-    Rm = 0.4276  * lamda / 12 * (taf[0]/Ni + taf[1]/Ni + taf[2]/Ni + taf[3]/Ni + taf[4]/Ni + taf[5]/Ni + taf[6]/Ni/8 + taf[7]/Ni + taf[8]/Ni + taf[9]/Ni)
+    #Gene[genes/L 0: cox,    1: narG,   2: nirk,   3: nrf,    4: dsr,     5: amoA,     6: hzo,    7: nap        8: nor      9: sox]
+    Rm = 0.4276  * lamda / 12 * (taf.cox/Ni + taf.narG/Ni + taf.nirk/Ni + taf.nrf/Ni + taf.dsr/Ni + taf.amoA/Ni + taf.hzo/Ni/8 + taf.nap/Ni + taf.nor/Ni + taf.sox/Ni)
     return Rm 
 
 # define Nitrogen as a nutrient. ==========[mol/g/s]
-def Nit_U(taf, GeneR, C_nh4, C_no2):
+def Nit_U(taf: Genes, GeneR, C_nh4, C_no2):
     Un = np.zeros((3, 1), dtype=np.float64)
     K_nutrient = 134/1e9  #mol
     Ni = 3.75 * 1e13    #[genes/g]
-    mu=np.array([0.28, 0.151, 0.247, 0.162, 0.0636, 0.432, 0.864, 0.864, 0.432, 0.864])/86400         #s-1
-    un = 0.1127  / 13 * (taf[0] * mu[0] /Ni + taf[1] * mu[1] /Ni + taf[2] * mu[2] /Ni + taf[3] * mu[3] /Ni + taf[4] * mu[4] /Ni+ taf[5] * mu[5] /Ni + taf[6] * mu[6] /Ni/8 + taf[7] * mu[7] /Ni + taf[8] * mu[8] /Ni + taf[9] * mu[9] /Ni)
-    un = 0.00000026
+    # mu=np.array([0.28, 0.151, 0.247, 0.162, 0.0636, 0.432, 0.864, 0.864, 0.432, 0.864])/86400         #s-1
+    mu = Mus()
+    un = 0.1127  / 13 * (taf.cox * mu.cox /Ni + taf.narG * mu.narG /Ni + taf.nirk * mu.nirk /Ni + taf.nrf * mu.nrf /Ni + taf.dsr * mu.dsr /Ni+ taf.amoA * mu.amoA /Ni + taf.hzo * mu.hzo /Ni/8 + taf.nap * mu.nap /Ni + taf.nor * mu.nor /Ni + taf.sox * mu.sox /Ni)
+    # un = 0.00000026
     Un[0] = un * (C_nh4 / (C_nh4 + K_nutrient))
-    Un[1] = (uu - Un[0]) * (C_no2 / (C_no2 + K_nutrient))
+    Un[1] = (un - Un[0]) * (C_no2 / (C_no2 + K_nutrient))
     Un[2] = un - Un[0] - Un[1]
     return Un
 
 # 定义生物代谢产生的化学物质. ==========[mol/L/s] 
-def R_nyg(GR, YG, DetG):
-    Rny = np.zeros((10, 1), dtype=np.float64)
+def R_nyg(GR, YG):
+    Rny = DeltaGs()
     Ni = 3.75 * 1e13    #[genes/g]
-    #Gene 1：cox,      2：narG,   3：nirk,   4：nrf,    5：dsr,     6：amoA,     7：hzo,    8：nap        9：nor      10：sox    
-    for i in range(0,10):
-        Rny[i] = GR[i]/Ni/YG[i]
+    for i , gene in enumerate(gene_names):
+        setattr(Rny, gene, GR[i][0] / Ni / YG[i][0])
     return Rny
 
 # 计算右端项生物代谢贡献的化学物质总和. ==========[mol/L/s]
-def Sum_R(Concentration, taf, depth):
+def Sum_R(Concentration: Chemicals, taf: Genes, depth: float):
     SumR = np.zeros((7, 1), dtype=np.float64)
     Ni  = 3.75 * 1e13    #[genes/g]
     # [mol/L】：C_co2, 2：C_hco3, 3：C_c6, 4：C_H, 5：C_no2, 6：C_no3, 7：C_n2, 8：C_nh4, 9：C_h2s, 10：C_so4, 11:C_DIC,  12:C_o2
-    C_co2 = Concentration[0]; C_hco3 = Concentration[1]; C_c6 = Concentration[2]; C_H  = Concentration[3]; C_no2 = Concentration[4]
-    C_no3 = Concentration[5];  C_n2  = Concentration[6]; C_nh4= Concentration[7]; C_h2s= Concentration[8]; C_so4 = Concentration[9]
-    C_DIC = Concentration[10]; C_o2  = Concentration[11]; C_POC  = Concentration[12]
-    Con   = [C_co2, C_hco3, C_c6, C_H, C_no2, C_no3, C_n2, C_nh4, C_h2s, C_so4, C_DIC, C_o2]   
-    DetG = Gibbs_G(Con)
-    YG = Biomass_Y(DetG)
+    # C_co2 = Concentration[0]; C_hco3 = Concentration[1]; C_c6 = Concentration[2]; C_H  = Concentration[3]; C_no2 = Concentration[4]
+    # C_no3 = Concentration[5];  C_n2  = Concentration[6]; C_nh4= Concentration[7]; C_h2s= Concentration[8]; C_so4 = Concentration[9]
+    # C_DIC = Concentration[10]; C_o2  = Concentration[11]; C_POC  = Concentration[12]
+    # Con   = [C_co2, C_hco3, C_c6, C_H, C_no2, C_no3, C_n2, C_nh4, C_h2s, C_so4, C_DIC, C_o2]   
+    DetG = Gibbs_G( Concentration )
+    YG = Biomass_Y( DetG )
     Ft = Thermo_T(DetG)
-    GR = Rate_R(taf, Ft, Con)
-    Rc = DOC_Rc(C_DIC, C_POC, age(depth))
+    GR = Rate_R(taf, Ft, Concentration )
+    Rc = DOC_Rc(Concentration.C_DIC, Concentration.C_POC, age(depth))
     Rn = 16/106 * Rc
     Rm  = DOC_Rm(taf)
-    Un  = Nit_U(taf, GR, C_nh4, C_no2)
-    Rnyg= R_nyg(GR, YG, DetG)
+    Un  = Nit_U(taf, GR, Concentration.C_nh4, Concentration.C_no2)
+    Rnyg= R_nyg(GR, YG)
     #Gene 0：cox,      1：narG,   2：nirk,   3：nrf,    4：dsr,     5：amoA,     6：hzo,    7：nap        8：nor      9：sox    
-    SumR[0] =  Rc/6 + Rm/6 - Rnyg[0] - Rnyg[1] - Rnyg[2] - Rnyg[3] - Rnyg[4]         
+    SumR[0] =  Rc/6 + Rm/6 - Rnyg.cox - Rnyg.narG - Rnyg.nirk - Rnyg.nrf - Rnyg.dsr         
     #SumR[0] = -Rc      ##########################20200117沉积物
-    SumR[1] = -6*Rnyg[0] - 1.5*Rnyg[5] - Rnyg[8] - 2*Rnyg[9]
-    SumR[2] = Rn + 4*Rnyg[3] - Rnyg[5] - Rnyg[6] - Un[0]
-    SumR[3] = 12*Rnyg[1] + Rnyg[5] +Rnyg[7] - Rnyg[6] - 2*Rnyg[8]- 8*Rnyg[2] - 4*Rnyg[3] - Un[1]
-    SumR[4] = 2*Rnyg[8] - 12*Rnyg[1] - Rnyg[7] - Un[2]
-    SumR[5] = Rnyg[7]/4 + Rnyg[9] - 3*Rnyg[4]
-    SumR[6] = -Rnyg[7]/4 - Rnyg[9] + 3*Rnyg[4]
+    SumR[1] = -6*Rnyg.cox - 1.5*Rnyg.amoA - 0.5*Rnyg.nor - 2*Rnyg.sox
+    SumR[2] = Rn + 4*Rnyg.nrf - Rnyg.amoA - Rnyg.hzo - Un[0]
+    SumR[3] = 12*Rnyg.narG + Rnyg.amoA + 4*Rnyg.nap - Rnyg.hzo - Rnyg.nor- 8*Rnyg.nirk - 4*Rnyg.nrf - Un[1]
+    SumR[4] = Rnyg.nor - 12*Rnyg.narG - 4*Rnyg.nap - Un[2]
+    SumR[5] = Rnyg.nap + Rnyg.sox - 3*Rnyg.dsr
+    SumR[6] = -Rnyg.nap - Rnyg.sox + 3*Rnyg.dsr
     return SumR 
 
 # 基因产生速率 ===========[cpoies/L/s]
