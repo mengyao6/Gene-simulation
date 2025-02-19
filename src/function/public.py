@@ -43,8 +43,8 @@ def diff(Temp = 25, Sality = 35, Presure = 1.013253):
     Dmol.C_so4 = 146.8013
     Dmol.C_h2s = 255.6641
     Dmol.C_po4 = 78.81548
-    Dmol.C_c6 = 0.00  # TODO
-    Dmol.C_no3 = 0.00  # TODO
+    Dmol.C_c6 = 300.00  # TODO
+    Dmol.C_no3 = 300.00  # TODO
 
     for matter in Chemical_names:
         matter_value = getattr(Dmol, matter)
@@ -260,3 +260,8 @@ def Rate_R2(Concentration: Chemicals, taf: Genes, depth: float):
     Ft = Thermo_T( DetG )
     GR = Rate_R(taf, Ft, Concentration)
     return GR
+
+#求解基因最大误差========================[copies/L]
+def Max_error(Gene,Tao):
+    det_g = np.max(np.abs(Gene - Tao), axis=0)
+    return np.max(det_g)

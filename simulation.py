@@ -5,9 +5,9 @@ import math
 import os
 import matplotlib.pyplot as plt
 import pdb
+from datetime import date
 
-
-from src.function.public import Rate_R2, Sum_R
+from src.function.public import Rate_R2, Sum_R, Max_error
 from src.function.solving import model_sol2, model_sol3
 
 from src.model.chemicals import Chemicals
@@ -17,6 +17,10 @@ from src.model.DeltaG import DeltaGs
 
 #############################0. Open file, read data about gene#########################
 #f=open("Gene.txt","w")
+
+# 创建保存路径
+save_dir = str(date.today())
+os.makedirs(save_dir, exist_ok=True)
 
 
 #############################1. Meshing  #########################
@@ -73,39 +77,27 @@ while 1:
     while 1:
         iter = iter + 1
     ######################3.1 重置避免物质浓度 为负值#################
-        for i in range(0, N+1):                                                    
-            for j in range(0,13):
-                if Concentration[i][j]<0:
-                    #print(C_Name[j],z[i],Concentration[i][j])
-                    Concentration[i][j] = 1e-20
-            for j in range(0,10):
-                if Gene[i][j]<0:
-                    #print(C_Name[j],z[i],Concentration[i][j])
-                    Gene[i][j] = 1e-20
+        # print("Concentration 中的最小值:", np.min(Concentration))
+        Concentration[Concentration < 0] = 1e-20
+
+        # print("Gene 中的最小值:", np.min(Gene))
+        Gene[Gene < 0] = 1e-20
 
     ###########################3.2 求解基因丰度######################
         GeneR = np.zeros((10, N+1), dtype=np.float64)
-        Sum8=0
-        for i in range(0, N+1):
-            Sum8 = Rate_R2(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])                    #计算不同层位的Ri，基因生长速率；[Coies/L/s]
-            for j in range(0, 10):
-                GeneR[j][i] = Sum8[j][0]
-        #print(GeneR[9,:])
+        for i in range(0, N+1):   #计算不同层位的Ri，基因生长速率；[Coies/L/s]
+            #print(GeneR[9,:])
+            GeneR[:, i] = Rate_R2(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])[:, 0]                    
+        
         Tao = np.zeros((N+1, 10), dtype=np.float64)
-        Sum9=0
         for i in range(0, 10):
-            Sum9 = model_sol3(i,  Gene[:,i],  GeneR[i,:], z,  N)
-            for j in range(0, N+1):
-                Tao[j][i] = Sum9[j][0]                        
+            Tao[:, i] = model_sol3(i,  Gene[:,i],  GeneR[i,:], z,  N, "sedimentary")[:, 0]                     
 
     ######################3.3 浓度求解##########################            
         SumR = np.zeros((7, N+1), dtype=np.float64)
-        Sum0=0
-        for i in range(0, N+1):
-            Sum0 = Sum_R(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])                           #计算细菌代谢产生的不同化学物质 Ri
-            for j in range(0,7):
-                SumR[j][i] = Sum0[j][0]                                                 #[mol/L/s]
-        Cc = np.zeros((7, N+1), dtype=np.float64)                                    #计算iter次化学物质浓度，并更新
+        for i in range(0, N+1):  #计算细菌代谢产生的不同化学物质 Ri   #[mol/L/s]
+            SumR[:, i] = Sum_R(Chemicals(Concentration[i,:]), Genes(Gene[i,:]), z[i])[:, 0]                           
+
         Sum1=0;  Sum2=0;  Sum3=0;  Sum4=0;  Sum5=0;  Sum6=0;  Sum7=0
         Sum1= model_sol2(z, 0, Concentration[:,2],   SumR[0,:], N, dz)                           #C6
         Sum2= model_sol2(z, 1, Concentration[:,11],  SumR[1,:], N, dz)                           #O2
@@ -114,3 +106,39 @@ while 1:
         Sum5= model_sol2(z, 4, Concentration[:,5],   SumR[4,:], N, dz)                           #NO3
         Sum6= model_sol2(z, 5, Concentration[:,9],   SumR[5,:], N, dz)                           #SO4
         Sum7= model_sol2(z, 6, Concentration[:,8],   SumR[6,:], N, dz)                          #H2S        
+
+    ###########################3.3物质浓度更新######################
+        for i in range(0, N+1):         
+            Concentration[i][2]=Sum1[i]                                    
+            Concentration[i][11]=Sum2[i]
+            Concentration[i][7]=Sum3[i]
+            Concentration[i][4]=Sum4[i]
+            Concentration[i][5]=Sum5[i]
+            Concentration[i][9]=Sum6[i]        
+           # Concentration[i][8]=Sum7[i]   
+
+
+    ###########################3.4 迭代收敛判断并更新基因丰度#########################
+        Maxi = Max_error(Gene, Tao)
+        Gene = Tao
+
+        if Maxi<1e-5  or  iter>1000:
+            #f.write("The iter ="+str(iter)+",   Maxi error ="+str(Maxi)+"\n")
+            print("The iter =", iter,",   Maxi error =", Maxi)   
+            break
+        else: 
+            #f.write("The iter ="+str(iter)+",   Maxi error ="+str(Maxi)+"\n")
+            print("The iter =", iter, ",   Maxi error =", Maxi) 
+
+############################4.稳定收敛判断并输出结果##########################            
+    Max = Max_error(Gene, Gene0) 
+    Gene0 = Gene
+    Concentration0 = Concentration
+    print(Max)
+    if Ttime%(100*dt)==0:
+        np.savetxt(os.path.join(save_dir, f'Concentration-{Ttime}.txt'), (Concentration))
+        np.savetxt(os.path.join(save_dir, f'Gene-{Ttime}.txt'), (Gene))
+    if Ttime>86400 or Max<1e-2:
+        np.savetxt(os.path.join(save_dir, f'Concentration.txt'), (Concentration))
+        np.savetxt(os.path.join(save_dir, f'Gene.txt'), (Gene))        
+        break 
