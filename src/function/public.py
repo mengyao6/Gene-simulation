@@ -97,7 +97,6 @@ def Water_rate(depth):                   #BJ
 
 # define Gibbs free energy =======[KJ/mol]
 def Gibbs_G( Concentration: Chemicals):
-    # D_G = np.zeros((10, 1), dtype=np.float64)
     # 1£ºC_co2, 2£ºC_hco3, 3£ºC_c6, 4£ºC_H, 5£ºC_no2, 6£ºC_no3, 7£ºC_n2, 8£ºC_nh4, 9£ºC_h2s, 10£ºC_so4, 11:C_DIC,  12:C_o2
     C_co2 = Concentration.C_co2; C_hco3 = Concentration.C_hco3; C_c6 = Concentration.C_c6; C_H  = Concentration.C_H; C_no2 = Concentration.C_no2
     C_no3 = Concentration.C_no3;  C_n2  = Concentration.C_n2; C_nh4= Concentration.C_nh4; C_h2s= Concentration.C_h2s; C_so4 = Concentration.C_so4
@@ -154,8 +153,6 @@ def Rate_R(taf: Genes, F_t: Genes, Concentration: Chemicals):
     C_no3 = Concentration.C_no3;  C_n2  = Concentration.C_n2; C_nh4 = Concentration.C_nh4; C_h2s= Concentration.C_h2s; C_so4 = Concentration.C_so4
     C_DIC = Concentration.C_DIC; C_o2  = Concentration.C_o2; C_POC= Concentration.C_POC
 
-    # 1£ºcox,      2£ºnarG,   3£ºnirk,   4£ºnrf,    5£ºdsr,     6£ºamoA,     7£ºhzo,    8£ºnap        9£ºnor      10£ºsox
-    # mu=np.array([0.28, 0.151, 0.247, 0.162, 0.0636, 0.432, 0.864, 0.864, 0.432, 0.864])/86400         #s-1
     mu = Mus()
     kk=np.asarray([[0.7e-6,0.121e-6], [0.7e-6,0.3e-6], [0.7e-6,0.3e-6], [0.7e-6,0.3e-6], [0.7e-6,3e-6,15e-6], [107e-6,18.75e-6], [5e-6,5e-6,0.2e-6], [0.121e-6,0.121e-6], [64.3e-6,16.9e-6], [0.121e-6,0.121e-6]], dtype=object)
     G_R[0] = taf.cox * F_t.cox * mu.cox * (C_o2 / ( C_o2 + kk[0][1] )) * ( C_c6 /(C_c6 + kk[0][0]))                         #1.cox           
@@ -201,10 +198,9 @@ def Nit_U(taf: Genes, GeneR, C_nh4, C_no2):
     Un = np.zeros((3, 1), dtype=np.float64)
     K_nutrient = 134/1e9  #mol
     Ni = 3.75 * 1e13    #[genes/g]
-    # mu=np.array([0.28, 0.151, 0.247, 0.162, 0.0636, 0.432, 0.864, 0.864, 0.432, 0.864])/86400         #s-1
     mu = Mus()
     un = 0.1127  / 13 * (taf.cox * mu.cox /Ni + taf.narG * mu.narG /Ni + taf.nirk * mu.nirk /Ni + taf.nrf * mu.nrf /Ni + taf.dsr * mu.dsr /Ni+ taf.amoA * mu.amoA /Ni + taf.hzo * mu.hzo /Ni/8 + taf.nap * mu.nap /Ni + taf.nor * mu.nor /Ni + taf.sox * mu.sox /Ni)
-    # un = 0.00000026
+    un = 0.00000026
     Un[0] = un * (C_nh4 / (C_nh4 + K_nutrient))
     Un[1] = (un - Un[0]) * (C_no2 / (C_no2 + K_nutrient))
     Un[2] = un - Un[0] - Un[1]
@@ -235,8 +231,7 @@ def Sum_R(Concentration: Chemicals, taf: Genes, depth: float):
     Rn = 16/106 * Rc
     Rm  = DOC_Rm(taf)
     Un  = Nit_U(taf, GR, Concentration.C_nh4, Concentration.C_no2)
-    Rnyg= R_nyg(GR, YG)
-    #Gene 0£ºcox,      1£ºnarG,   2£ºnirk,   3£ºnrf,    4£ºdsr,     5£ºamoA,     6£ºhzo,    7£ºnap        8£ºnor      9£ºsox    
+    Rnyg= R_nyg(GR, YG)   
     SumR[0] =  Rc/6 + Rm/6 - Rnyg.cox - Rnyg.narG - Rnyg.nirk - Rnyg.nrf - Rnyg.dsr         
     #SumR[0] = -Rc      ##########################20200117³Á»ýÎï
     SumR[1] = -6*Rnyg.cox - 1.5*Rnyg.amoA - 0.5*Rnyg.nor - 2*Rnyg.sox
@@ -251,11 +246,6 @@ def Sum_R(Concentration: Chemicals, taf: Genes, depth: float):
 def Rate_R2(Concentration: Chemicals, taf: Genes, depth: float):    
     GR = np.zeros((10, 1), dtype=np.float64)
     Ni  = 3.75 * 10**13    #[genes/g]
-    # 1£ºC_co2, 2£ºC_hco3, 3£ºC_c6, 4£ºC_H, 5£ºC_no2, 6£ºC_no3, 7£ºC_n2, 8£ºC_nh4, 9£ºC_h2s, 10£ºC_so4, 11:C_DIC,  12:C_o2
-    # C_co2 = Concentration[0]; C_hco3 = Concentration[1]; C_c6 = Concentration[2]; C_H  = Concentration[3]; C_no2 = Concentration[4]
-    # C_no3 = Concentration[5];  C_n2  = Concentration[6]; C_nh4= Concentration[7]; C_h2s= Concentration[8]; C_so4 = Concentration[9]
-    # C_DIC = Concentration[10]; C_o2  = Concentration[11]
-    # Con   = [C_co2, C_hco3, C_c6, C_H, C_no2, C_no3, C_n2, C_nh4, C_h2s, C_so4, C_DIC, C_o2]   
     DetG = Gibbs_G( Concentration )
     Ft = Thermo_T( DetG )
     GR = Rate_R(taf, Ft, Concentration)

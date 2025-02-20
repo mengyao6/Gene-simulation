@@ -19,7 +19,7 @@ from src.model.DeltaG import DeltaGs
 #f=open("Gene.txt","w")
 
 # 创建保存路径
-save_dir = str(date.today())
+save_dir = 'results/' + str(date.today())
 os.makedirs(save_dir, exist_ok=True)
 
 
@@ -33,8 +33,9 @@ Concentration = np.zeros((N+1, 13), dtype=np.float64)
 Concentration0 = np.zeros((N+1, 13), dtype=np.float64)
 Gene = np.zeros((N+1, 10), dtype=np.float64)
 Gene0 = np.zeros((N+1, 10), dtype=np.float64)
-C_Name=('0: C_co2', '1: C_hco3', '2: C_c6', '3: C_H', '4: C_no2', '5: C_no3', '6: C_n2', '7: C_nh4', '8: C_h2s', '9: C_so4', '10:C_DIC',  '11:C_o2', '12:C_POC')
-# The dta from Minzong zone [wt.%、mol/L 0: C_co2, 1: C_hco3, 2: C_c6, 3: C_H, 4: C_no2, 5: C_no3, 
+
+# The data from Minzong zone 
+# [wt.%、mol/L 0: C_co2, 1: C_hco3, 2: C_c6, 3: C_H, 4: C_no2, 5: C_no3, 
 # 6: C_n2, 7: C_nh4, 8: C_h2s, 9: C_so4, 10:C_DIC,  11:C_o2,    12:C_POC]
 for i in range(0, N+1):
     Concentration[i][0] = 1e-7
@@ -56,9 +57,12 @@ for i in range(0, N+1):
     Gene[i][2] = 1e5
     Gene[i][3] = 1e5
     Gene[i][4] = 1e5
-    Gene[i][5] = 1.8149115050146092e-05 *z[i]**10+( -0.0025970258840197304 *z[i]**9)+( 0.12524748342028677 *z[i]**8)+( -0.9848821749028847 *z[i]**7)+( -123.61588309591274 *z[i]**6)+( 4925.4942433373935 *z[i]**5)+( -75163.8547815459 *z[i]**4)+( 321348.1047953144 *z[i]**3)+( 4250441.997581997 *z[i]**2)+( -53197485.408834904 *z[i])+( 169686702.3348549 )
+    # Gene[i][5] = 1.8149115050146092e-05 *z[i]**10+( -0.0025970258840197304 *z[i]**9)+( 0.12524748342028677 *z[i]**8)+( -0.9848821749028847 *z[i]**7)+( -123.61588309591274 *z[i]**6)+( 4925.4942433373935 *z[i]**5)+( -75163.8547815459 *z[i]**4)+( 321348.1047953144 *z[i]**3)+( 4250441.997581997 *z[i]**2)+( -53197485.408834904 *z[i])+( 169686702.3348549 )
+    Gene[i][5] = 1.08e+07 * np.exp(-0.15 * z[i]) + 5.81e+05    
     Gene[i][6] = -3.1496922177991296e-06 *z[i]**10+( 0.00031832652419954723 *z[i]**9)+( -0.004374674229161838 *z[i]**8)+( -0.4849318876896918 *z[i]**7)+( 11.03207967439595 *z[i]**6)+( 729.1492911791356 *z[i]**5)+( -40833.72222230589 *z[i]**4)+( 864073.0902662921 *z[i]**3)+( -9246811.681851482 *z[i]**2)+( 49431498.17036085 *z[i])+( -99993069.60356417 )
-    Gene[i][7] = 1e5  # TODO ？？？ why set 0 before
+    zi = z[i]
+    Gene[i][6] = np.piecewise(zi, [zi < 26, zi >= 26], [lambda zi: 1.23e5 * zi + 1.50e+06, lambda zi: 7.87e+06 * np.exp(-0.25 * (zi - 26))])
+    Gene[i][7] = 1e5  
     Gene[i][8] = 1e5
     Gene[i][9] = 1e5
 Concentration = np.divide(Concentration, 1e6)                        #concentration [mol/L]
