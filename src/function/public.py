@@ -240,6 +240,14 @@ def Sum_R(Concentration: Chemicals, taf: Genes, depth: float):
     SumR[4] = Rnyg.nor - 12*Rnyg.narG - 4*Rnyg.nap - Un[2]
     SumR[5] = Rnyg.nap + Rnyg.sox - 3*Rnyg.dsr
     SumR[6] = -Rnyg.nap - Rnyg.sox + 3*Rnyg.dsr
+
+    SumR[1] = -6*Rnyg.cox - 1.5*Rnyg.amoA - Rnyg.nor - 2*Rnyg.sox
+    SumR[2] = Rn + 4*Rnyg.nrf - Rnyg.amoA - Rnyg.hzo - Un[0]
+    SumR[3] = 12*Rnyg.narG + Rnyg.amoA + Rnyg.nap - Rnyg.hzo - 2*Rnyg.nor- 8*Rnyg.nirk - 4*Rnyg.nrf - Un[1]
+    SumR[4] = 2*Rnyg.nor - 12*Rnyg.narG - Rnyg.nap - Un[2]
+    SumR[5] = 0.25*Rnyg.nap + Rnyg.sox - 3*Rnyg.dsr
+    SumR[6] = -0.25*Rnyg.nap - Rnyg.sox + 3*Rnyg.dsr
+
     return SumR 
 
 # 基因产生速率 ===========[cpoies/L/s]
